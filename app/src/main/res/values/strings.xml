@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">BLE_Scan</string>
+    <string name="sample">Sample</string>
+    <string name="unknown_device">Unknown Device</string>
+    <string name="refresh">Refresh</string>
+    <string name="scan">Scan</string>
+    <string name="stop_scan">Stop Scan</string>
 </resources>
