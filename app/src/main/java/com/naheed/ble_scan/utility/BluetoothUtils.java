@@ -12,19 +12,10 @@ import android.widget.Toast;
  */
 public class BluetoothUtils {
 
-//    public static void enableBluetooth(Context context, BluetoothAdapter bluetoothAdapter)
-//    {
-//        if(bluetoothAdapter == null || !bluetoothAdapter.isEnabled())
-//        {
-//            Intent btInent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-////            context.startactivityfor
-//        }
-
     public static boolean isBLESupported(Context context)
     {
         if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(context, "BLE not supported", Toast.LENGTH_SHORT).show();
-//            ((Activity)context).finish();
             return false;
         }
         return true;

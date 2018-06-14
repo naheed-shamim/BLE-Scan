@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".DeviceDetailActivity">
+
+    <TextView
+        android:id="@+id/dev_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/TextAppearance.AppCompat.Title"
+        android:paddingEnd="20dp"
+        android:paddingStart="10dp"
+        android:text="@string/device_name"/>
+
+    <TextView
+        android:id="@+id/device_detail_name_txt_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/TextAppearance.AppCompat.Title"
+        android:layout_toEndOf="@id/dev_name"
+        android:text="@string/sample"/>
+
+    <TextView
+        android:id="@+id/dev_address"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/TextAppearance.AppCompat.Body1"
+        android:paddingEnd="20dp"
+        android:paddingStart="10dp"
+        android:layout_below="@id/dev_name"
+
+        android:text="@string/device_address"/>
+
+    <TextView
+        android:id="@+id/device_detail_address_txt_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/TextAppearance.AppCompat.Body1"
+        android:layout_toEndOf="@id/dev_address"
+        android:layout_below="@id/dev_name"
+        android:text="@string/sample"/>
+
+    <TextView
+        android:id="@+id/connection_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/TextAppearance.AppCompat.Body2"
+        android:paddingEnd="20dp"
+        android:paddingStart="10dp"
+        android:layout_below="@id/dev_address"
+        android:text="@string/device_state"/>
+
+    <TextView
+        android:id="@+id/connection_state_txt_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/dev_address"
+        style="@style/TextAppearance.AppCompat.Body1"
+        android:layout_toEndOf="@id/connection_state"
+        android:text="@string/sample"/>
+
+    <TextView
+        android:id="@+id/data_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        style="@style/TextAppearance.AppCompat.Body2"
+        android:paddingEnd="20dp"
+        android:paddingStart="10dp"
+        android:layout_below="@id/connection_state"
+        android:text="@string/data"/>
+
+    <TextView
+        android:id="@+id/data_value_txt_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/connection_state"
+        style="@style/TextAppearance.AppCompat.Body1"
+        android:layout_toEndOf="@id/data_value"
+        android:text="@string/sample"/>
+
+    <ExpandableListView
+        android:id="@+id/gatt_service_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:layout_below="@id/data_value"/>
+
+
+</RelativeLayout>

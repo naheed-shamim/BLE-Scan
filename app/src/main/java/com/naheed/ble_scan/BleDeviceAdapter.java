@@ -2,15 +2,12 @@ package com.naheed.ble_scan;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
-import android.content.res.Resources;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 
@@ -25,10 +22,12 @@ public class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceAdapter.BleD
 
     private ArrayList<BluetoothDevice> mLeDevices;
     private Context mContext;
+    private RecyclerViewClickListener mClickListener;
 
-    public BleDeviceAdapter(Context context) {
+    public BleDeviceAdapter(Context context, RecyclerViewClickListener listener) {
         this.mContext = context;
         mLeDevices = new ArrayList<BluetoothDevice>();
+        mClickListener = listener;
     }
 
     @NonNull
@@ -41,7 +40,7 @@ public class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceAdapter.BleD
     }
 
     @Override
-    public void onBindViewHolder(@NonNull BleDeviceViewHolder holder, int position)
+    public void onBindViewHolder(@NonNull BleDeviceViewHolder holder, final int position)
     {
         BluetoothDevice bluetoothDevice = mLeDevices.get(position);
 
@@ -54,6 +53,13 @@ public class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceAdapter.BleD
             holder.mDeviceNameTxtView.setText(R.string.unknown_device);
 
         holder.mDeviceAddrTextView.setText(deviceAddress);
+
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mClickListener.onItemClick(v, position);
+            }
+        });
     }
 
 
@@ -67,9 +73,12 @@ public class BleDeviceAdapter extends RecyclerView.Adapter<BleDeviceAdapter.BleD
         if(!mLeDevices.contains(device))
         {
             mLeDevices.add(device);
-//            this.notifyItemRangeChanged(0,mLeDevices.size());
             this.notifyDataSetChanged();
         }
+    }
+
+    public BluetoothDevice getDevice(int position) {
+        return mLeDevices.get(position);
     }
 
 

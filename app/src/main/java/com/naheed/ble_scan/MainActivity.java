@@ -7,20 +7,21 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 
 import com.naheed.ble_scan.utility.BluetoothUtils;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements RecyclerViewClickListener {
 
     @BindView(R.id.ble_devices_recycler_view)
     RecyclerView mRecyclerView;
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private BleDeviceAdapter mLeDevicesAdapter;
     private Handler mHandler;
     private boolean mIsScanning;
+
 
     private static final int SCAN_PERIOD = 10000;        // BT scan time 10 Seconds
 
@@ -51,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         enableBluetoothIfNot();
 
-        mLeDevicesAdapter = new BleDeviceAdapter(MainActivity.this);
+        mLeDevicesAdapter = new BleDeviceAdapter(MainActivity.this, MainActivity.this);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
         mRecyclerView.setAdapter(mLeDevicesAdapter);
     }
@@ -131,11 +133,28 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     mLeDevicesAdapter.addDevice(device);
-//                    mLeDevicesAdapter.notifyDataSetChanged();
                 }
             });
         }
     };
+
+    /**
+     * Pass
+     * @param shouldScan true to Start else false to Stop
+     */
+    private void startScan(final boolean shouldScan)
+    {
+        if(shouldScan)
+        {
+            mBluetoothAdapter.startLeScan(mScanCallback);
+            mIsScanning = true;
+        }
+        else
+        {
+            mBluetoothAdapter.stopLeScan(mScanCallback);
+            mIsScanning = false;
+        }
+    }
 
     private void scanLeDevice(final boolean enabled)
     {
@@ -145,20 +164,44 @@ public class MainActivity extends AppCompatActivity {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mIsScanning = false;
-                    mBluetoothAdapter.stopLeScan(mScanCallback);
+                    startScan(false);
                     invalidateOptionsMenu();
                 }
             }, SCAN_PERIOD);
 
-            mIsScanning = true;
-            mBluetoothAdapter.startLeScan(mScanCallback);
+            startScan(true);
         }
         else
         {
-            mIsScanning = false;
-            mBluetoothAdapter.stopLeScan(mScanCallback);
+            startScan(false);
         }
         invalidateOptionsMenu();
+    }
+
+    @Override
+    public void onItemClick(View view, int position) {
+        Toast.makeText(MainActivity.this, "Item Clicked", Toast.LENGTH_SHORT).show();
+
+        BluetoothDevice device = mLeDevicesAdapter.getDevice(position);
+
+        if(device != null)
+        {
+            Intent detailIntent = new Intent(this, DeviceDetailActivity.class);
+            detailIntent.putExtra(DeviceDetailActivity.EXTRAS_DEVICE_NAME, device.getName());
+            detailIntent.putExtra(DeviceDetailActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+
+            if(mIsScanning)
+            {
+                startScan(false);
+            }
+
+            startActivity(detailIntent);
+        }
+
+    }
+
+    @Override
+    public void onButtonClick(int position, Object object, String keyIdentifier) {
+
     }
 }
