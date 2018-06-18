@@ -258,7 +258,8 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
     }
 
 
-    //Clear the UI and adapter
+    //Clear the UI
+    // Clear Adapter
     @Override
     public void clearData()
     {
