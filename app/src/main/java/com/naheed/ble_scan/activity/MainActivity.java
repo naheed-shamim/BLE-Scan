@@ -1,21 +1,25 @@
-package com.naheed.ble_scan;
+package com.naheed.ble_scan.activity;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Parcel;
+import android.os.ParcelUuid;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.naheed.ble_scan.BleDeviceAdapter;
+import com.naheed.ble_scan.R;
+import com.naheed.ble_scan.RecyclerViewClickListener;
 import com.naheed.ble_scan.utility.BluetoothUtils;
 
 import butterknife.BindView;
@@ -26,15 +30,25 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
     @BindView(R.id.ble_devices_recycler_view)
     RecyclerView mRecyclerView;
 
-    private static final int REQUEST_ENABLE_BT =1;
+    private static final int REQUEST_ENABLE_BT = 1;
+
     private BluetoothAdapter mBluetoothAdapter;
     private BleDeviceAdapter mLeDevicesAdapter;
     private Handler mHandler;
     private boolean mIsScanning;
 
 
-    private static final int SCAN_PERIOD = 10000;        // BT scan time 10 Seconds
-
+    private BluetoothAdapter.LeScanCallback mScanCallback = new BluetoothAdapter.LeScanCallback() {
+        @Override
+        public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mLeDevicesAdapter.addDevice(device);
+                }
+            });
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
         mLeDevicesAdapter = new BleDeviceAdapter(MainActivity.this, MainActivity.this);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
         mRecyclerView.setAdapter(mLeDevicesAdapter);
+        shouldScanLeDevice(true);
     }
 
     @Override
@@ -86,97 +101,84 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId())
-        {
+        switch (item.getItemId()) {
             case R.id.menu_start_scan:
                 mLeDevicesAdapter.clearLeDevices();
-                scanLeDevice(true);
+                shouldScanLeDevice(true);
                 break;
             case R.id.menu_stop_scan:
-                scanLeDevice(false);
+                shouldScanLeDevice(false);
                 break;
         }
         return true;
     }
 
-    private void checkBleAndEnableBT()
-    {
-        // if BLE not supported, finish
-        // else switch BT on
-        if(!BluetoothUtils.isBLESupported(MainActivity.this))
-            finish();
-        else
-        {
-            final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+    /**
+     * if BLE not supported, finish
+     * else switch BT on
+     */
+    private void checkBleAndEnableBT() {
 
-            if(bluetoothManager != null)
-            {
-                mBluetoothAdapter = bluetoothManager.getAdapter();
+        if (!BluetoothUtils.isBLESupported(MainActivity.this))
+            finish();
+        else {
+            mBluetoothAdapter = BluetoothUtils.getBluetoothAdapter(MainActivity.this);
+
+            if (mBluetoothAdapter != null)
                 enableBluetoothIfNot();
-            }
         }
     }
 
-    private void enableBluetoothIfNot()
-    {
-        if(!mBluetoothAdapter.isEnabled())
-        {
+    private void enableBluetoothIfNot() {
+
+        if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
     }
 
-    private BluetoothAdapter.LeScanCallback mScanCallback = new BluetoothAdapter.LeScanCallback() {
-        @Override
-        public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mLeDevicesAdapter.addDevice(device);
-                }
-            });
-        }
-    };
-
     /**
      * Pass
      * @param shouldScan true to Start else false to Stop
      */
-    private void startScan(final boolean shouldScan)
-    {
-        if(shouldScan)
-        {
+    private void startScan(final boolean shouldScan) {
+        if (shouldScan) {
             mBluetoothAdapter.startLeScan(mScanCallback);
             mIsScanning = true;
-        }
-        else
-        {
+        } else {
             mBluetoothAdapter.stopLeScan(mScanCallback);
             mIsScanning = false;
         }
     }
 
-    private void scanLeDevice(final boolean enabled)
-    {
+
+    /**
+     * Scans for LE devices
+     * @param enabled if it's true and stops for false
+     */
+    private void shouldScanLeDevice(final boolean enabled) {
+
         // Stop the Scan after 10 sec
-        if(enabled)
-        {
+        if (enabled) {
             mHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     startScan(false);
                     invalidateOptionsMenu();
                 }
-            }, SCAN_PERIOD);
+            }, BluetoothUtils.SCAN_PERIOD);
 
             startScan(true);
-        }
-        else
-        {
+        } else {
             startScan(false);
         }
         invalidateOptionsMenu();
     }
+
+
+    /*
+    Recycler View Click Listeners
+    */
 
     @Override
     public void onItemClick(View view, int position) {
@@ -184,20 +186,25 @@ public class MainActivity extends AppCompatActivity implements RecyclerViewClick
 
         BluetoothDevice device = mLeDevicesAdapter.getDevice(position);
 
-        if(device != null)
+        ParcelUuid[] uuids = device.getUuids();
+
+            if(uuids != null)
         {
+        for(ParcelUuid uuid : uuids)
+        {
+            Log.d("scannedUUID",""+uuid);
+        }}
+
+        if (device != null) {
             Intent detailIntent = new Intent(this, DeviceDetailActivity.class);
             detailIntent.putExtra(DeviceDetailActivity.EXTRAS_DEVICE_NAME, device.getName());
             detailIntent.putExtra(DeviceDetailActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
 
-            if(mIsScanning)
-            {
-                startScan(false);
-            }
+        if (mIsScanning)
+            startScan(false);
 
             startActivity(detailIntent);
         }
-
     }
 
     @Override

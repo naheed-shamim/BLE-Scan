@@ -1,4 +1,4 @@
-package com.naheed.ble_scan;
+package com.naheed.ble_scan.ble;
 
 import android.bluetooth.BluetoothGattService;
 

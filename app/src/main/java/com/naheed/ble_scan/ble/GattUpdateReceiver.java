@@ -1,8 +1,9 @@
-package com.naheed.ble_scan;
+package com.naheed.ble_scan.ble;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 
 /**
  * Created by Naheed on 6/18/2018.
@@ -18,14 +19,21 @@ import android.content.Intent;
 //
 public class GattUpdateReceiver extends BroadcastReceiver {
 
-    boolean mConnected;
-    private GattUpdateListener mGattListener;
-//    BleService mBleService;
+    public static IntentFilter getGattIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BleService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(BleService.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(BleService.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(BleService.ACTION_DATA_AVAILABLE);
+        return intentFilter;
+    }
 
-    public GattUpdateReceiver(boolean mConnected, GattUpdateListener listener) {
-        this.mConnected = mConnected;
+//    boolean mConnected;
+    private GattUpdateListener mGattListener;
+
+    public GattUpdateReceiver(GattUpdateListener listener) {
+//        this.mConnected = mConnected;
         mGattListener = listener;
-//        mBleService = service;
     }
 
     @Override
@@ -36,17 +44,16 @@ public class GattUpdateReceiver extends BroadcastReceiver {
         switch (action)
         {
             case BleService.ACTION_GATT_CONNECTED:
-                mConnected = true;
+//                mConnected = true;
                 mGattListener.updateConnectionState("Connected");
 //                updateConnectionState("Connected");
 //                    invalidateOptionsMenu();
 
                 break;
             case BleService.ACTION_GATT_DISCONNECTED:
-                mConnected = false;
+//                mConnected = false;
                 mGattListener.updateConnectionState("Disconnected");
                 mGattListener.clearData();
-
 //                updateConnectionState("Disconnected");
                 //                    invalidateOptionsMenu();
 //                clearUI();

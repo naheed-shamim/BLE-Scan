@@ -1,4 +1,4 @@
-package com.naheed.ble_scan;
+package com.naheed.ble_scan.ble;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -16,8 +16,6 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
-
-import com.naheed.ble_scan.utility.SampleGattAttributes;
 
 import java.util.List;
 import java.util.UUID;
@@ -51,6 +49,10 @@ public class BleService extends Service {
 
     public final static UUID UUID_HEART_RATE_MEASUREMENT =
             UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
+
+    public final static UUID UUID_BATTERY_LEVEL =
+            UUID.fromString(SampleGattAttributes.UUID_BATTERY_LEVEL_CHARACTERISTIC);
+
 
     private final IBinder mBinder = new LocalBinder();
 
@@ -147,9 +149,29 @@ public class BleService extends Service {
     private void broadcastUpdate(String intentAction, BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(intentAction);
 
+        UUID uuid = characteristic.getUuid();
+
+        // For all other profiles, writes the data formatted in HEX.
+        final byte[] data = characteristic.getValue();
+        if (data != null && data.length > 0) {
+            final StringBuilder stringBuilder = new StringBuilder(data.length);
+            for(byte byteChar : data)
+                stringBuilder.append(String.format("%02X ", byteChar));
+            intent.putExtra(EXTRA_DATA, new String(data) + "\n" +
+                    stringBuilder.toString());
+        }
+
+        // Handle battery Service
+        if(UUID_BATTERY_LEVEL.equals(uuid))
+        {
+                int format = BluetoothGattCharacteristic.FORMAT_UINT8;
+                final int battery_level = characteristic.getIntValue(format, 0);
+                intent.putExtra(EXTRA_DATA, battery_level + "%");
+        }
+
         // This is special handling for the Heart Rate Measurement profile. Data
         // parsing is carried out as per profile specifications.
-        if(UUID_HEART_RATE_MEASUREMENT.equals(characteristic.getUuid())){
+        if(UUID_HEART_RATE_MEASUREMENT.equals(uuid)){
 
             int flag = characteristic.getProperties();
             int format= -1;
@@ -169,17 +191,6 @@ public class BleService extends Service {
             intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
         }
 
-        else {
-            // For all other profiles, writes the data formatted in HEX.
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
-                final StringBuilder stringBuilder = new StringBuilder(data.length);
-                for(byte byteChar : data)
-                    stringBuilder.append(String.format("%02X ", byteChar));
-                intent.putExtra(EXTRA_DATA, new String(data) + "\n" +
-                        stringBuilder.toString());
-            }
-        }
         sendBroadcast(intent);
     }
 

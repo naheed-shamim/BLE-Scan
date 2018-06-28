@@ -1,24 +1,28 @@
-package com.naheed.ble_scan;
+package com.naheed.ble_scan.activity;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.naheed.ble_scan.utility.BluetoothUtils;
-import com.naheed.ble_scan.utility.SampleGattAttributes;
+import com.naheed.ble_scan.R;
+import com.naheed.ble_scan.ble.BleService;
+import com.naheed.ble_scan.ble.GattUpdateListener;
+import com.naheed.ble_scan.ble.GattUpdateReceiver;
+import com.naheed.ble_scan.ble.SampleGattAttributes;
+import com.naheed.ble_scan.utility.AlertUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,6 +74,7 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
+
             mBluetoothLeService = ((BleService.LocalBinder) service).getService();
             if (!mBluetoothLeService.initialize()) {
                 Log.e(TAG, "Unable to initialize Bluetooth");
@@ -82,10 +87,9 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothLeService = null;
-        }
+        };
     };
-
-
+    private boolean mScanning;
 
 
     @Override
@@ -96,19 +100,69 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
 
         getIntentValues();
 
+
+        connectToDevice();
+
         Intent gattServiceIntent = new Intent(this, BleService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-
-        mGattUpdateReceiver = new GattUpdateReceiver(mConnected, DeviceDetailActivity.this);
-
+        mGattUpdateReceiver = new GattUpdateReceiver(DeviceDetailActivity.this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+
+        registerReceiver(mGattUpdateReceiver, GattUpdateReceiver.getGattIntentFilter());
+
         if (mBluetoothLeService != null) {
             final boolean result = mBluetoothLeService.connect(mDeviceAddressStr);
+            Log.d(TAG, "Connect request result=" + result);
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.connect, menu);
+
+        if(mConnected) {
+            menu.findItem(R.id.menu_disconnect).setVisible(true);
+            menu.findItem(R.id.menu_connect).setVisible(false);
+        }
+        else {
+            menu.findItem(R.id.menu_disconnect).setVisible(false);
+            menu.findItem(R.id.menu_connect).setVisible(true);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.menu_connect:
+
+                connectToDevice();
+                break;
+
+            case R.id.menu_disconnect:
+
+                mBluetoothLeService.disconnect();
+                break;
+        }
+        return true;
+    }
+
+    private void connectToDevice()
+    {
+        if (mBluetoothLeService != null) {
+            final boolean result = mBluetoothLeService.connect(mDeviceAddressStr);
+            mConnected = result;
+
+            if(!mConnected)
+                AlertUtils.showShortToast(this, "Couldn't Connect to Device");
+            else
+                AlertUtils.showShortToast(this, "Trying to Connect");
+
             Log.d(TAG, "Connect request result=" + result);
         }
     }
@@ -129,19 +183,28 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
     private void getIntentValues()
     {
         final Intent activityIntent = getIntent();
+
         mDeviceNameStr = activityIntent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddressStr = activityIntent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
         mDeviceNameTxtView.setText(mDeviceNameStr);
         mDeviceAddressTxtView.setText(mDeviceAddressStr);
 
+        setExpandableListClickListener();
+    }
+
+    private void setExpandableListClickListener()
+    {
         mGattServicesList.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
             public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
+
                 if (mGattCharacteristics != null) {
                     final BluetoothGattCharacteristic characteristic =
                             mGattCharacteristics.get(groupPosition).get(childPosition);
+
                     final int charaProp = characteristic.getProperties();
+
                     if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
                         // If there is an active notification on a characteristic, clear
                         // it first so it doesn't update the data field on the user interface.
@@ -151,6 +214,7 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
                         }
                         mBluetoothLeService.readCharacteristic(characteristic);
                     }
+
                     if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
                         mNotifyCharacteristic = characteristic;
                         mBluetoothLeService.setCharacteristicNotification(characteristic, true);
@@ -160,20 +224,18 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
                 return false;
             }
         });
-    }
 
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BleService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BleService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BleService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BleService.ACTION_DATA_AVAILABLE);
-        return intentFilter;
     }
 
 
+    /*
+    GattUpdate Receiver Listener Implementations
+     */
     @Override
     public void updateConnectionState(final String connectionState) {
+
+        mConnected = connectionState.equalsIgnoreCase("connected");
+        invalidateOptionsMenu();
 
         runOnUiThread(new Runnable() {
             @Override
@@ -259,7 +321,6 @@ public class DeviceDetailActivity extends AppCompatActivity implements GattUpdat
 
 
     //Clear the UI and adapter
-    // hhhhhhhhh
     @Override
     public void clearData()
     {
