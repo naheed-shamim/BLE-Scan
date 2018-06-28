@@ -7,18 +7,18 @@
         android:checkable="false"
         app:showAsAction="always" />
 
-    <item
-        android:id="@+id/menu_start_scan"
-        android:title="@string/scan"
-        android:orderInCategory="2"
-        app:showAsAction="ifRoom|withText"/>
+        <item
+            android:id="@+id/menu_start_scan"
+            android:title="@string/scan"
+            android:orderInCategory="2"
+            app:showAsAction="ifRoom|withText"/>
 
 
-    <item
-        android:id="@+id/menu_stop_scan"
-        android:title="@string/stop_scan"
-        android:orderInCategory="3"
-        app:showAsAction="ifRoom"/>
+        <item
+            android:id="@+id/menu_stop_scan"
+            android:title="@string/stop_scan"
+            android:orderInCategory="3"
+            app:showAsAction="ifRoom"/>
 
 
 </menu>
